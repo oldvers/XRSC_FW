@@ -1,0 +1,15 @@
+exe
+lst
+out
+build
+Debug
+settings
+*.bak
+*.dep
+*.ewt
+*.uvguix.*
+JLinkLog.txt
+JLinkSettings.ini
+*.uvgui.*
+*.uvgui_*
+*.build_log.htm

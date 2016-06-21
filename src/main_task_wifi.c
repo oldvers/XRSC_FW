@@ -6,9 +6,68 @@
 #include "main_task_wifi.h"
 #include "main_task_roadsign.h"
 
+/*----------------------------------------------------------------------------*/
+
+#define RS_CMD_REFRESH_ON       0
+#define RS_CMD_SET_BRIGHT       1
+#define RS_CMD_SET_IMAGE        2
+#define RS_CMD_SET_SLIDE        3
+#define RS_CMD_SET_CLIP         4
+#define RS_CMD_GET_STATUS       5
+#define RS_CMD_REFRESH_OFF    126
+ 
+/*----------------------------------------------------------------------------*/
+
+typedef __packed struct RsPacketHeader_s
+{
+  U16 Length;     //0 - Length      - 2   bytes
+  U8  Command;    //2 - Command     - 1   byte
+  U8  Brightness; //3 - Brightness  - 1   byte
+  U16 Parameter;  //4 - Parameter   - 2   bytes (Delay, Number of animation )
+} RsPacketHeader_t, * RsPacketHeader_p;
+
+typedef __packed struct RsPacketGeneral_s
+{
+  RsPacketHeader_t Header;
+  U16              CS;
+} RsPacketGeneral_t, * RsPacketGeneral_p;
+
+typedef __packed struct RsPacketImage_s
+{
+  RsPacketHeader_t Header;
+  U8  ImageCount; //6 - Image count - 1   byte  (optionally)
+  U8  Image[576]; //7 - Image 0     - 576 bytes (optionally)
+  U16 CS;         //    CS          - 2   bytes
+} RsPacketImage_t, * RsPacketImage_p;
+
+typedef __packed struct RsPacketSlide_s
+{
+  RsPacketHeader_t Header;
+  U8  ImageCount;    //6 - Image count - 1       byte  (optionally)
+  U8  Image[2][576]; //7 - Image 0,1   - 576 x 2 bytes (optionally)
+  U16 CS;            //    CS          - 2       bytes
+} RsPacketSlide_t, * RsPacketSlide_p;
+
+typedef __packed struct RsPacketClip_s
+{
+  RsPacketHeader_t Header;
+  U8  ImageCount;    //6 - Image count - 1       byte  (optionally)
+  U8  Image[3][576]; //7 - Image 0,1   - 576 x 2 bytes (optionally)
+  U16 CS;            //    CS          - 2       bytes
+} RsPacketClip_t, * RsPacketClip_p;
+
+typedef union RsPacket_u
+{
+  RsPacketGeneral_t General;
+  RsPacketImage_t   Image;
+  RsPacketSlide_t   Slide;
+  RsPacketClip_t    Clip;
+} RsPacket_t, * RsPacket_p;
+
+/*----------------------------------------------------------------------------*/
+
 static U8  CmdBuffer[2048];
 static U16 CmdLength;
-static U8  ImageBuffer[1024];
 static U8  SSID[16];
 static U8  Pass[16];
 
@@ -25,95 +84,75 @@ void WiFi_ThreadInit( void )
 
 /*----------------------------------------------------------------------------*/
 
-void StrToRaw(U8 * pStr, U8 * pRaw, U16 aSize)
-{
-  aSize /= 2;
-  
-  while ( aSize-- )
-  {
-    *pRaw =(((pStr[0] > '9' ? pStr[0] - '7' : pStr[0] - '0') << 4) |
-             (pStr[1] > '9' ? pStr[1] - '7' : pStr[1] - '0'));
-    pRaw++;
-    pStr += 2;
-  }
-}
-
-/*----------------------------------------------------------------------------*/
-
 U8 WiFiParseCommand(void)
 {
-  U8   Brightness, Result = 0;
-  U8 * pPacket = CmdBuffer;
-  U16  Delay;
-  
+  U8         Result = 0;
+  RsPacket_p pPacket = (RsPacket_p)CmdBuffer;
+
   //Road Sign On
-  if ( 0 == strncmp((char *)CmdBuffer, "ROAD_SIGN->ON", sizeof("ROAD_SIGN->ON") - 1) )
+  if ( RS_CMD_REFRESH_ON == pPacket->General.Header.Command )
   {
     RoadSign_On();
+    RoadSign_SetBrightness(pPacket->General.Header.Brightness);
+  }
+  
+  //Road Sign Set Brightness
+  if ( RS_CMD_SET_BRIGHT == pPacket->General.Header.Command )
+  {
+    if ( 0 < pPacket->General.Header.Brightness )
+    {
+      RoadSign_On();
+      RoadSign_SetBrightness(pPacket->General.Header.Brightness);
+    }
+    else
+    {
+      RoadSign_Off();
+    }
+  }
+  
+  //Road Sign Get Status
+  if ( RS_CMD_GET_STATUS == pPacket->General.Header.Command )
+  {
+    pPacket->General.Header.Length     = sizeof(RsPacketGeneral_t);
+    pPacket->General.Header.Command    = RS_CMD_GET_STATUS;
+    pPacket->General.Header.Brightness = 0;
+    pPacket->General.Header.Parameter  = 0;
+    pPacket->General.CS                = sizeof(RsPacketGeneral_t) + RS_CMD_GET_STATUS;
+    CmdLength = sizeof(RsPacketGeneral_t);
+    Result = 1;
   }
 
   //Road Sign Off
-  if ( 0 == strncmp((char *)CmdBuffer, "ROAD_SIGN->OFF", sizeof("ROAD_SIGN->OFF") - 1) )
+  if ( RS_CMD_REFRESH_OFF == pPacket->General.Header.Command )
   {
     RoadSign_Off();
-  }  
+  }
 
   //Set Image
-  if ( 0 == strncmp((char *)pPacket, "SHOW_IMG->", sizeof("SHOW_IMG->") - 1) )
+  if ( RS_CMD_SET_IMAGE == pPacket->General.Header.Command )
   {
-    pPacket += (sizeof("SHOW_IMG->") - 1);
-    
-    Brightness = 0;
-    while ( ':' != *pPacket )
+    if ( 576 == (pPacket->General.Header.Length - sizeof(RsPacketGeneral_t) - 1) )
     {
-      Brightness = Brightness * 10 + (*pPacket++ - '0');
-    }
-    pPacket++;
-    
-    if ( 1152 == (CmdLength - (pPacket - CmdBuffer)) )
-    {
-      StrToRaw((U8*)pPacket, ImageBuffer, 1152);
-      RoadSign_SetImage(ImageBuffer, 576);
-      RoadSign_SetBrightness(Brightness);
+      if ( 1 == pPacket->Image.ImageCount )
+      {
+        RoadSign_SetImage(pPacket->Image.Image, 576);
+        RoadSign_SetBrightness(pPacket->Image.Header.Brightness);
+      }
     }
   }
 
   //Set Slide
-  if ( 0 == strncmp((char *)pPacket, "SHOW_SLD->", sizeof("SHOW_SLD->") - 1) )
+  if ( RS_CMD_SET_SLIDE == pPacket->General.Header.Command )
   {
-    pPacket += (sizeof("SHOW_SLD->") - 1);
-    
-    Brightness = 0;
-    while ( ',' != *pPacket )
+    if ( 1152 == (pPacket->General.Header.Length - sizeof(RsPacketGeneral_t) - 1) )
     {
-      Brightness = Brightness * 10 + (*pPacket++ - '0');
+      if ( 2 == pPacket->Image.ImageCount )
+      {
+        RoadSign_SetSlide( pPacket->Slide.Image[0], 576, pPacket->Slide.Image[1], 576 );
+        RoadSign_SetBrightness( pPacket->Image.Header.Brightness );
+        RoadSign_SetDelay( pPacket->Slide.Header.Parameter );
+      }
     }
-    pPacket++;
-    
-    Delay = 0;
-    while ( ':' != *pPacket )
-    {
-      Delay = Delay * 10 + (*pPacket++ - '0');
-    }
-    pPacket++;
-    
-    if ( 1152 == (CmdLength - (pPacket - CmdBuffer)) )
-    {
-      StrToRaw((U8*)pPacket, ImageBuffer, 1152);
-      RoadSign_SetSlide(ImageBuffer, 576);
-      RoadSign_SetBrightness(Brightness);
-      RoadSign_SetDelay(Delay);
-    }
-//  if(numberImg >= 9)
-//  {   
-//      numberImg =0;
-//  }                   
-//  if(os_mut_wait (&setIMG, 100)!=OS_R_TMO)
-//  {   
-//      memcpy((u8*)&slideShowImg[numberImg *576],getImage,576);    
-//      numberImg++;
-//      os_mut_release (&setIMG); 
-//  }
   }
 
   return Result;
@@ -121,71 +160,22 @@ U8 WiFiParseCommand(void)
 
 /*----------------------------------------------------------------------------*/
 
-//U8 SetDefSlideShow(void)
-//{
-//  U8 Result = 0;
-//  
-//  if ( 0 == strncmp((char *)CmdBuffer, "SET_ANIMATION_1", sizeof("SET_ANIMATION_1")) )
-//  {
-//    Result = 1;
-//  }
-//  
-//  if ( 0 == strncmp((char *)CmdBuffer, "SET_ANIMATION_2", sizeof("SET_ANIMATION_2")) )
-//  {
-//    Result = 2;
-//  }
-//  
-//  if ( 0 == strncmp((char *)CmdBuffer, "SET_ANIMATION_3", sizeof("SET_ANIMATION_3")) )
-//  {
-//    Result = 3;
-//  }
-
-//  if ( 0 == strncmp((char *)CmdBuffer, "SET_ANIMATION_4", sizeof("SET_ANIMATION_4")) )
-//  {
-//    Result = 4;
-//  }
-
-//  if ( 0 == strncmp((char *)CmdBuffer, "SET_ANIMATION_5", sizeof("SET_ANIMATION_5")) )
-//  {
-//    Result = 5;
-//  }
-//  
-//  if ( 0 == strncmp((char *)CmdBuffer, "SET_ANIMATION_6", sizeof("SET_ANIMATION_6")) )
-//  {
-//    Result = 6;
-//  }
-
-//  if ( 0 == strncmp((char *)CmdBuffer, "SET_ANIMATION_7", sizeof("SET_ANIMATION_7")) )
-//  {
-//    Result = 7;
-//  }
-//  
-//  if ( 0 == strncmp((char *)CmdBuffer, "SET_ANIMATION_8", sizeof("SET_ANIMATION_8")) )
-//  {
-//    Result = 8;
-//  }
-//  
-//  return Result;
-//}
-
-/*----------------------------------------------------------------------------*/
-
 U8 WiFiParsePacket(void)
 {
   U8   Result = 0;
-  U16  wCS, rCS, i;
+  U16  rLen, wCS, rCS, i;
   
-  //Check if '$' simbol is present on the end of the packet
-  if ( '$' == CmdBuffer[CmdLength - 5] )
+  rLen = (CmdBuffer[1] << 8) + CmdBuffer[0];
+  
+  if ( (rLen == CmdLength) && (rLen < 2048) )
   {
-    CmdLength -= 4;
-    
-    //Read received Control Sum
-    StrToRaw(&CmdBuffer[CmdLength], (U8 *)&rCS, 4);
+    //Read received Control Sum of packet
+    rCS = (CmdBuffer[CmdLength - 1] << 8) + CmdBuffer[CmdLength - 2];
     
     //Calculate the Control Sum of packet
     wCS = 0;
-    for ( i = 0; i < CmdLength; i++ )
+    rLen -= 2;
+    for ( i = 0; i < rLen; i++ )
     {
       wCS += CmdBuffer[i];
     }
@@ -193,8 +183,6 @@ U8 WiFiParsePacket(void)
     //If received CS equals calculated CS - parse the command in the packet
     if ( rCS == wCS )
     {
-      CmdLength -= 1;
-
       Result = WiFiParseCommand();
     }
   }
@@ -211,7 +199,7 @@ __task void WiFiThread(void)
   while ( 1 )
   {
     //Start WiFi Access Point
-    sprintf( (char *)SSID, "RS%08X", UDID_0 );
+    sprintf( (char *)SSID, "RS%08X", UDID_0 ^ UDID_1 ^ UDID_2 );
     sprintf( (char *)Pass, "%s", "RoadSign" );
     if ( 1 != H_drvWiFi_Connect(E_WIFI_MODE_AP, SSID, Pass) )
     {

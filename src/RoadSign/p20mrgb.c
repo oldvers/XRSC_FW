@@ -3,19 +3,34 @@
 #include "rsImageRefreshing.h"
 #include "p20mrgb.h"
 
+//const U8 BuffBits[2][6] =
+//{
+//  /* Buff 1 */
+//  {
+//    /* Row 3 */
+//    (1 << P20M_ROW3_R),
+//    (1 << P20M_ROW3_G),
+//    (1 << P20M_ROW3_B),
+//    /* Row 4 */
+//    (1 << P20M_ROW4_R),
+//    (1 << P20M_ROW4_G),
+//    (1 << P20M_ROW4_B),
+//  },
+//  /* Buff 0 */
+//  {
+//    /* Row 1 */
+//    (1 << P20M_ROW1_R),
+//    (1 << P20M_ROW1_G),
+//    (1 << P20M_ROW1_B),
+//    /* Row 2 */
+//    (1 << P20M_ROW2_R),
+//    (1 << P20M_ROW2_G),
+//    (1 << P20M_ROW2_B),
+//  },
+//};
+
 const U8 BuffBits[2][6] =
 {
-  /* Buff 1 */
-  {
-    /* Row 3 */
-    (1 << P20M_ROW3_R),
-    (1 << P20M_ROW3_G),
-    (1 << P20M_ROW3_B),
-    /* Row 4 */
-    (1 << P20M_ROW4_R),
-    (1 << P20M_ROW4_G),
-    (1 << P20M_ROW4_B),
-  },
   /* Buff 0 */
   {
     /* Row 1 */
@@ -27,8 +42,18 @@ const U8 BuffBits[2][6] =
     (1 << P20M_ROW2_G),
     (1 << P20M_ROW2_B),
   },
+  /* Buff 1 */
+  {
+    /* Row 3 */
+    (1 << P20M_ROW3_R),
+    (1 << P20M_ROW3_G),
+    (1 << P20M_ROW3_B),
+    /* Row 4 */
+    (1 << P20M_ROW4_R),
+    (1 << P20M_ROW4_G),
+    (1 << P20M_ROW4_B),
+  },
 };
-
 
 void p20mrgb_unpack2chain(U8C * aPackedBuf, U16C aPackedSize, pRS RS, U8 aColumns, U8 aRows)
 {
@@ -71,7 +96,8 @@ void p20mrgb_unpack2chain(U8C * aPackedBuf, U16C aPackedSize, pRS RS, U8 aColumn
         rowOffset = 0;
         for(row = 0; row < aRows; row++)
         {
-          Buff = BUFF_COUNT - (row / BUFF_COUNT) - 1;
+          //Buff = BUFF_COUNT - (row / BUFF_COUNT) - 1;
+          Buff = row / BUFF_COUNT;
           Bit = (row % 2) * 3;
           //Row 1
           //CurByte = unpacked[PY * P20M_WIDTH + PX];

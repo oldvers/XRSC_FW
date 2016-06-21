@@ -20,6 +20,7 @@ void ImageRefreshing_Init( pRS aRS );
 void ImageRefreshing_Start( void );
 U8   ImageRefreshing_End( void );
 void ImageRefreshing_SetBrightness(U8 aBrightness);
+U8 ImageRefreshing_IsOn( void );
 void ImageRefreshing_OneShift( void );
 
 #endif //__RS_PROCESSING_H

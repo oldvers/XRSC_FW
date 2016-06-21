@@ -1,24 +1,26 @@
+#include <string.h>
 #include "RTL.h"
 #include "rsProcessing.h"
 #include "rsImageRefreshing.h"
 #include "main_task_roadsign.h"
 
-//  0 - TestImage
-//  1 - TestImage2
-//  2 - TestImage3
-//  3 - TestImage4
-//  4 - TestImage5
-//  5 - TestImage6
-//  6 - TestImage7
-//  7 - TestImage8
-//  8 - TestImage9
-//  9 - TestImage10
-// 10 - LeftArrowWithFlash
-// 11 - RightArrowWithFlash
-// 12 - RoadWorksWithFlash
-// 13 - R_60_2_WithFlash
-// 14 - R_60_2
-// 15 - Empty
+//  0 - TestImage       //Image/Slide 0 - Used in Animation
+//  1 - Empty           //Image/Slide 1 - Used in Animation
+//  2 - TestImage2
+//  3 - TestImage3
+//  4 - TestImage4
+//  5 - TestImage5
+//  6 - TestImage6
+//  7 - TestImage7
+//  8 - TestImage8
+//  9 - TestImage9
+// 10 - TestImage10
+// 11 - LeftArrowWithFlash
+// 12 - RightArrowWithFlash
+// 13 - RoadWorksWithFlash
+// 14 - R_60_2_WithFlash
+// 15 - R_60_2
+
 
 U8 Images[16][16*3*8*4*3/8] =
 {
@@ -98,6 +100,9 @@ U8 Images[16][16*3*8*4*3/8] =
     0x92, 0x24, 0xDB, 0xB6, 0x6D, 0xDB, 0xB6, 0x6D,  
   },
 
+  //Empty
+  {0},
+  
   //U8 TestImage2[96*6] =
   {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x90, 
@@ -1161,26 +1166,30 @@ U8 Images[16][16*3*8*4*3/8] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x92, 0x24, 0x49, 
     0x92, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   },
-
-  //Empty
-  {0}
 };
 
 static tRS RS;
 static U8  Brightness;
-static U16 Delay;
+static U16 Delay = 300;
+static U8  Mode = 0;
+static U8  SlideNum = 0;
+static U8  ImageNum = 2;
 
 static __task void RoadSignThread(void);
+
+static OS_TID RoadSignThreadId;
 
 /*----------------------------------------------------------------------------*/
 
 void RoadSign_ThreadInit( void )
 {
+  Mode = 0;
+  
   p20mrgb_unpack2chain(Images[0], 576, &RS, 3, 4);
 
   ImageRefreshing_Init(&RS);
 
-  os_tsk_create( RoadSignThread, 10 );
+  RoadSignThreadId = os_tsk_create( RoadSignThread, 10 );
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1199,40 +1208,64 @@ void RoadSign_Off( void )
 
 /*----------------------------------------------------------------------------*/
 
-//void RoadSign_ThreadInit( void )
-//{
-  //
-//}
-
-/*----------------------------------------------------------------------------*/
-
-void RoadSign_SetImage(U8 * pImageBuffer, U16 aSize)
+void RoadSign_SetImage(U8 * pImage, U16 aSize)
 {
-  p20mrgb_unpack2chain(pImageBuffer, aSize, &RS, 3, 4);
-  ImageRefreshing_SetBrightness(Brightness);
-  ImageRefreshing_Start();
+  if ( NULL != pImage )
+  {
+    p20mrgb_unpack2chain(pImage, aSize, &RS, 3, 4);
+
+    if ( 0 == ImageRefreshing_IsOn() )
+    {
+      ImageRefreshing_Start();
+      ImageRefreshing_SetBrightness(Brightness);
+    }
+  }
+  else
+  {
+    if ( 16 == ImageNum )
+    {
+      ImageRefreshing_End();
+    }
+    else
+    {
+      p20mrgb_unpack2chain(Images[ImageNum], 576, &RS, 3, 4);
+      if ( 0 == ImageRefreshing_IsOn() )
+      {
+        ImageRefreshing_Start();
+        ImageRefreshing_SetBrightness(Brightness);
+      }
+    }
+    ImageNum++;
+    if ( 16 < ImageNum ) ImageNum = 2;
+  }
   
-    //numberImg =0;
-    //slideShow1 =0;
-    //newroadsign_unpack2chain((U8*)&getImage[0], 96*6, &RS, 3, 2);
-    //os_mut_release (&setIMG);
+  Mode = 0;
+  os_evt_set(1, RoadSignThreadId);
 }
 
 /*----------------------------------------------------------------------------*/
 
-void RoadSign_SetSlide(U8 * pImageBuffer, U16 aSize)
+void RoadSign_SetSlide(U8 * Image1, U16 aSize1, U8 * Image2, U16 aSize2)
 {
-  p20mrgb_unpack2chain(pImageBuffer, aSize, &RS, 3, 4);
-//  if(numberImg >= 9)
-//  {   
-//      numberImg =0;
-//  }                   
-//  if(os_mut_wait (&setIMG, 100)!=OS_R_TMO)
-//  {   
-//      memcpy((u8*)&slideShowImg[numberImg *576],getImage,576);    
-//      numberImg++;
-//      os_mut_release (&setIMG); 
-//  }
+  U16 i;
+  
+  for ( i = 0; i < 576; i++ )
+  {
+    Images[0][i] = Image1[i];
+    Images[1][i] = Image2[i];
+  }
+  
+  SlideNum = 0;
+  p20mrgb_unpack2chain(Images[SlideNum], 576, &RS, 3, 4);
+  
+  if ( 0 == ImageRefreshing_IsOn() )
+  {
+    ImageRefreshing_Start();
+    ImageRefreshing_SetBrightness(Brightness);
+  }
+  
+  Mode = 1;
+  os_evt_set(1, RoadSignThreadId);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1247,7 +1280,38 @@ void RoadSign_SetBrightness(U8 aBrightness)
 
 void RoadSign_SetDelay(U16 aDelay)
 {
-  Delay = aDelay;
+  if ( 300 > aDelay )
+  {
+    Delay = 300;
+  }
+  else
+  {
+    Delay = aDelay;
+  }
+}
+
+/*----------------------------------------------------------------------------*/
+
+static __task void RoadSignThread(void)
+{
+  for(;;)
+  {
+    os_evt_wait_or(0xFF, Delay); //OS_R_EVT
+
+    if ( 1 == Mode )
+    {
+      p20mrgb_unpack2chain(Images[SlideNum & 1], 576, &RS, 3, 4);
+      SlideNum++;
+    }
+  }
+}
+
+/*----------------------------------------------------------------------------*/
+
+void RoadSign_ChangeBrightness(void)
+{
+  Brightness += 8;
+  ImageRefreshing_SetBrightness(Brightness);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1365,13 +1429,13 @@ void RoadSign_SetDelay(U16 aDelay)
 //	 os_dly_wait(500);
 //}
 
-static __task void RoadSignThread(void)
-{
-//	static u8 numShowImg =0;
-  
-  for(;;)
-  {
-    os_dly_wait(100);
+//  //Event = osMessageGet(WiFiRxSyncQueueId, aTimeOut);
+//  MsgRes = os_mbx_wait(&WiFiRxSyncQueue, (void *)&Msg.Raw, aTimeOut);
+//  
+//  //if (Event.status == osEventMessage)
+//  if( OS_R_TMO != MsgRes )
+    
+    
 //		if(slideShow1==1)
 //		{
 //			RS1();
@@ -1428,5 +1492,4 @@ static __task void RoadSignThread(void)
 //				numShowImg =0;
 //			}				 
 //		}		
-  }
-}
+

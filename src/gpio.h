@@ -59,9 +59,12 @@ typedef struct
 	((GPIO_TypeDefEx *)port)->CR[pin / 8] |= (mode << ((pin % 8) * 4));
 
 #define GPIO_Hi(port,pin) \
-    (port->BSRR = (1 << pin))
+  (port->BSRR = (1 << pin))
 
 #define GPIO_Lo(port,pin) \
-    (port->BSRR = (1 << (pin + 16)))
+  (port->BSRR = (1 << (pin + 16)))
+
+#define GPIO_In(port,pin) \
+  ((port->IDR >> pin) & 1)
 
 #endif /* __GPIO_H__ */

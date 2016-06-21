@@ -1414,7 +1414,7 @@ U8 SocketRead(U8 * pSocket, U8 * pData, U16 * pSize)
   if ( 0 == WiFi.Status.Ready ) return 0;
   if ( 0 == WiFi.Status.Connected ) return 0; //TODO: Error definitions, Disconnection
   
-  if ( E_SOCKET_NONE == WiFi.Socket ) return 0; //TODO: Error definitions, Disconnection
+  //if ( E_SOCKET_NONE == WiFi.Socket ) return 0; //TODO: Error definitions, Disconnection
   
   //if ( 0 == WiFiLock( WiFi.TimeOut ) ) return 0;
   

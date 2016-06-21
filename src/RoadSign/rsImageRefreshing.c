@@ -264,6 +264,11 @@ void ImageRefreshing_Start(void)
   IR.InProgress = 1;
 }
 
+U8 ImageRefreshing_IsOn(void)
+{
+  return IR.InProgress = 1;
+}
+
 /******************************************************************************/
 
 U8 ImageRefreshing_End(void)

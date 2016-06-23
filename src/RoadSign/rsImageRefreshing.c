@@ -83,8 +83,8 @@ void ImageRefreshing_Init(pRS aRS)
       SPI_CR1_SSM  |       //Software Slave control
       SPI_CR1_SSI  |       //Internal Slave select
   //  SPI_CR1_LSBFIRST |   //LSB First
-    SPI_CR1_BR_0 |       //Prescaller
-    SPI_CR1_BR_1 |
+      SPI_CR1_BR_0 |       //Prescaller
+  //  SPI_CR1_BR_1 |
   //  SPI_CR1_BR_2 |
       SPI_CR1_MSTR |       //Master mode
   //  SPI_CR1_CPOL |
@@ -143,7 +143,7 @@ void ImageRefreshing_Init(pRS aRS)
   AFIO->MAPR |= IR_TIM_REMAP;
 
   RCC->IR_TIM_CLK_R |= IR_TIM_CLK_EN;
-  IR_TIM->PSC = 33 - 1;
+  IR_TIM->PSC = 8 - 1;
   IR_TIM->ARR = 256 - 1;
   //Setup TIM Compare Channel 1 (Output, PWM Mode 1, Inverted, 10.67 us)
   IR_TIM->CCER &= ~(TIM_CCER_CC1E | TIM_CCER_CC1P);

@@ -7,8 +7,8 @@ void ADC_Init( void )
   
   //Enable ADC clock
   RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
-  //Setup ADC prescaller to 6 (72 / 6 -> 12 MHz)
-  RCC->CFGR |= RCC_CFGR_ADCPRE_1;
+  //Setup ADC prescaller to 4 (48 / 4 -> 12 MHz)
+  RCC->CFGR |= RCC_CFGR_ADCPRE_0;
   
   ADC1->CR1 = 0;
   //Enable temperature sensor and Vrefint

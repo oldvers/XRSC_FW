@@ -112,6 +112,8 @@ int main()
 {
   DBGMCU->CR |= DBGMCU_CR_DBG_TIM3_STOP;
   
+  SystemCoreClockUpdate();
+  
   //os_sys_init(MainTask);
   os_sys_init_prio(MainTask, 10);
   

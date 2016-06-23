@@ -943,13 +943,19 @@ U8 H_drvWiFi_Start(U32 aTimeOut)
     if ( 0 == H_drvWiFi_AT_Execute((U8 *)"+GMR") ) continue;
     
     //Check if Autoconnection is off
-    if( 1 != H_drvWiFi_AT_Get((U8 *)"+CWAUTOCONN", (U8 *)":%d", &AutoConnect) ) continue;
+    if ( 0 == H_drvWiFi_AT_Get((U8 *)"+CWAUTOCONN", (U8 *)":%d", &AutoConnect) ) continue;
     
     //Switch off AutoConnect
     if ( 0 != AutoConnect )
     {
       if ( 0 == H_drvWiFi_AT_Set((U8 *)"+CWAUTOCONN", (U8 *)"%d", 0) ) continue;
     }
+    
+    //Set Tx power (Max legal power is 100 mW)
+    //mW -- 1 2 3 4 5 6 8 10 12 15 20 25 30 40 50 60 80 100
+    //dBm - 1 2 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+    //RF TX power, range 0 ~ 82, unit : 0.25 dBm
+    if ( 0 == H_drvWiFi_AT_Set((U8 *)"+RFPOWER", (U8 *)"%d", 80) ) continue;
     
     //Module is inited succesfully
     WiFi.Status.Ready = 1;

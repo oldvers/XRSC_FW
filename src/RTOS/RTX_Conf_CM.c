@@ -72,7 +72,7 @@
 //   <i> Set the timer clock value for selected timer.
 //   <i> Default: 6000000  (6MHz)
 #ifndef OS_CLOCK
- #define OS_CLOCK       72000000
+ #define OS_CLOCK       48000000
 #endif
 
 //   <o>Timer tick value [us] <1-1000000>

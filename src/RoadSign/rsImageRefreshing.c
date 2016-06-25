@@ -18,7 +18,7 @@ tImageRefreshing IR;
 
 unsigned int Val = ~0x00700700, xxx = 0;
 
-/******************************************************************************/
+/*----------------------------------------------------------------------------*/
 
 void ImageRefreshing_Init(pRS aRS)
 {
@@ -100,7 +100,7 @@ void ImageRefreshing_Init(pRS aRS)
       SPI_CR2_TXDMAEN;     //Enable DMA Tx
   //  SPI_CR2_RXDMAEN;     //Enable DMA Rx
 
-  //* NVIC *******************************************************************************************************
+  /* NVIC */
 
   NVIC_SetPriorityGrouping(6);
 
@@ -125,7 +125,7 @@ void ImageRefreshing_Init(pRS aRS)
   NVIC_ClearPendingIRQ(IR_TIM_IRQN);
   NVIC_EnableIRQ(IR_TIM_IRQN);
 
-  //* DMA ********************************************************************************************************
+  /* DMA */
 
   RCC->AHBENR |= IR_SPI_DMA_CLK;
 
@@ -137,7 +137,7 @@ void ImageRefreshing_Init(pRS aRS)
   IR_SPI_DMA_TX_CHANNEL->CCR  |= IR_SPI_DMA_TX_MEM_INC | IR_SPI_DMA_TX_DIR | IR_SPI_DMA_TX_TCIE;
   IR_SPI_DMA_TX_CHANNEL->CCR  |= IR_SPI_DMA_TX_EN;
 
-  //* TIM ********************************************************************************************************
+  /* TIM */
 
   RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
   AFIO->MAPR |= IR_TIM_REMAP;
@@ -165,7 +165,7 @@ void ImageRefreshing_Init(pRS aRS)
   IR_TIM->CR1 |= TIM_CR1_CEN;
 }
 
-/******************************************************************************/
+/*----------------------------------------------------------------------------*/
 
 void ImageRefreshing_Update(pRS aRS)
 {
@@ -179,7 +179,7 @@ void ImageRefreshing_Update(pRS aRS)
   IR.InProgress = 1;
 }
 
-/******************************************************************************/
+/*----------------------------------------------------------------------------*/
 
 void IR_SPI_DMA_IRQ_HANDLER()
 {
@@ -188,11 +188,9 @@ void IR_SPI_DMA_IRQ_HANDLER()
     (IR_SPI_DMA_TX_FLAG_GL | IR_SPI_DMA_TX_FLAG_TC | IR_SPI_DMA_TX_FLAG_HT | IR_SPI_DMA_TX_FLAG_TC);
 
   IR.CurrentAddress += IR.PartSize;
-  //if(IR.CurrentAddress >= IR.EndAddress) IR.CurrentAddress = IR.StartAddress;
-  //LED_STAT1_On();
 }
 
-/******************************************************************************/
+/*----------------------------------------------------------------------------*/
 
 void IR_TIM_IRQ_HANDLER()
 {
@@ -212,7 +210,6 @@ void IR_TIM_IRQ_HANDLER()
       IR_SPI_DMA_TX_CHANNEL->CMAR = (U32)IR.CurrentAddress;
       IR_SPI_DMA_TX_CHANNEL->CNDTR = IR.PartSize;
       IR_SPI_DMA_TX_CHANNEL->CCR |= IR_SPI_DMA_TX_EN;
-      //IR.CurrentAddress += IR.PartSize;
     }
   }
 
@@ -245,7 +242,7 @@ void IR_TIM_IRQ_HANDLER()
   }
 }
 
-/******************************************************************************/
+/*----------------------------------------------------------------------------*/
 
 void ImageRefreshing_SetBrightness(U8 aBrightness)
 {
@@ -254,8 +251,12 @@ void ImageRefreshing_SetBrightness(U8 aBrightness)
   B <<= 8;
   B /= 100;
   
+  if ( 255 < B ) B = 255;
+  
   IR_TIM->CCR1 = B;
 }
+
+/*----------------------------------------------------------------------------*/
 
 void ImageRefreshing_Start(void)
 {
@@ -264,12 +265,14 @@ void ImageRefreshing_Start(void)
   IR.InProgress = 1;
 }
 
+/*----------------------------------------------------------------------------*/
+
 U8 ImageRefreshing_IsOn(void)
 {
   return IR.InProgress = 1;
 }
 
-/******************************************************************************/
+/*----------------------------------------------------------------------------*/
 
 U8 ImageRefreshing_End(void)
 {
@@ -279,7 +282,7 @@ U8 ImageRefreshing_End(void)
   return (U8)(IR.InProgress == 0);
 }
 
-/******************************************************************************/
+/*----------------------------------------------------------------------------*/
 
 void ImageRefreshing_OneShift(void)
 {
@@ -319,4 +322,4 @@ void ImageRefreshing_OneShift(void)
   }
 }
 
-/******************************************************************************/
+/*----------------------------------------------------------------------------*/

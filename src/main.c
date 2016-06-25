@@ -6,6 +6,7 @@
 #include "main_task_wifi.h"
 #include "main_task_roadsign.h"
 
+/*----------------------------------------------------------------------------*/
 
 __task void MainTask()
 {
@@ -64,9 +65,10 @@ __task void MainTask()
       RoadSign_ChangeBrightness();
     }
     
-    
+    //Get Temperature
     Temperature = ADC_ReadTemperature();
     
+    //Enable Fan
     if ( Temperature > 20 )
     {
       FanEn = 1;
@@ -76,6 +78,7 @@ __task void MainTask()
       FanEn = 0;
     }
     
+    //Fan On/Off every 3 minutes
     if ( 1 == FanEn )
     {
       FanDelay++;
@@ -106,7 +109,7 @@ __task void MainTask()
   }
 }
 
-
+/*----------------------------------------------------------------------------*/
 
 int main()
 {
@@ -114,7 +117,6 @@ int main()
   
   SystemCoreClockUpdate();
   
-  //os_sys_init(MainTask);
   os_sys_init_prio(MainTask, 10);
   
   while(1)
@@ -122,3 +124,5 @@ int main()
     //
   }
 }
+
+/*----------------------------------------------------------------------------*/

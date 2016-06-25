@@ -3,7 +3,6 @@
 
 #include "types.h"
 
-//void RoadSign_Init( void );
 void RoadSign_On( void );
 void RoadSign_Off( void );
 void RoadSign_ThreadInit( void );

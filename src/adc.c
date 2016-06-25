@@ -1,6 +1,8 @@
 #include "stm32f10x.h"
 #include "types.h"
 
+/*----------------------------------------------------------------------------*/
+
 void ADC_Init( void )
 {
   volatile U32 delay;
@@ -36,6 +38,8 @@ void ADC_Init( void )
   //Select the chhannel for conversion (16 - temperature)
   ADC1->SQR3 = (16 << 0);
 }
+
+/*----------------------------------------------------------------------------*/
 
 S16 ADC_ReadTemperature(void)
 {
@@ -80,3 +84,5 @@ S16 ADC_ReadTemperature(void)
   
   return Temperature;
 }
+
+/*----------------------------------------------------------------------------*/

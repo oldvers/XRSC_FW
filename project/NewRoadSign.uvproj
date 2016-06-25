@@ -427,11 +427,6 @@
               <FilePath>..\src\gpio.h</FilePath>
             </File>
             <File>
-              <FileName>leds.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\src\leds.h</FilePath>
-            </File>
-            <File>
               <FileName>types.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\src\types.h</FilePath>

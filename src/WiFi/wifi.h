@@ -58,10 +58,8 @@ U8 H_drvWiFi_AT_Execute(U8 * pCommand);
 U8 H_drvWiFi_AT_Wait(U8 * pAnswer, U32 aTimeOut);
 U8 H_drvWiFi_AT_Get(U8 * pParameter, const U8 * pFormat, ...);
 U8 H_drvWiFi_AT_Set(U8 * pParameter, const U8 * pFormat, ...);
-//U8 H_drvWiFi_AT_Test(U8 * pParameter);
-//U8 H_drvWiFi_Read(U8 * pBuffer, U16 * aSize, U32 aTimeOut);
 
-void WiFi_Connect(void); //U8 * pSSID, U8 * pPass);
+void WiFi_Connect(void);
 U8 RawFifo_Put( U8 aByte );
 U8 RawFifo_Get( U8 * pByte );
 

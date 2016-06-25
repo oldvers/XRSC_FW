@@ -3,32 +3,6 @@
 #include "rsImageRefreshing.h"
 #include "p20mrgb.h"
 
-//const U8 BuffBits[2][6] =
-//{
-//  /* Buff 1 */
-//  {
-//    /* Row 3 */
-//    (1 << P20M_ROW3_R),
-//    (1 << P20M_ROW3_G),
-//    (1 << P20M_ROW3_B),
-//    /* Row 4 */
-//    (1 << P20M_ROW4_R),
-//    (1 << P20M_ROW4_G),
-//    (1 << P20M_ROW4_B),
-//  },
-//  /* Buff 0 */
-//  {
-//    /* Row 1 */
-//    (1 << P20M_ROW1_R),
-//    (1 << P20M_ROW1_G),
-//    (1 << P20M_ROW1_B),
-//    /* Row 2 */
-//    (1 << P20M_ROW2_R),
-//    (1 << P20M_ROW2_G),
-//    (1 << P20M_ROW2_B),
-//  },
-//};
-
 const U8 BuffBits[2][6] =
 {
   /* Buff 0 */
@@ -54,6 +28,8 @@ const U8 BuffBits[2][6] =
     (1 << P20M_ROW4_B),
   },
 };
+
+/*----------------------------------------------------------------------------*/
 
 void p20mrgb_unpack2chain(U8C * aPackedBuf, U16C aPackedSize, pRS RS, U8 aColumns, U8 aRows)
 {
@@ -102,35 +78,17 @@ void p20mrgb_unpack2chain(U8C * aPackedBuf, U16C aPackedSize, pRS RS, U8 aColumn
           //Row 1
           //CurByte = unpacked[PY * P20M_WIDTH + PX];
           CurByte = unpacked[rowOffset + colOffset + PY * P20M_WIDTH * aColumns + PX];
-          //if(CurByte & 0x01) PF->P[BUFF_COUNT - (P20M_MOD1_R / BUFF_COUNT)] |= (1 << (P20M_MOD1_R % BUFF_COUNT));
-          //if(CurByte & 0x02) PF->P[BUFF_COUNT - (P20M_MOD1_G / BUFF_COUNT)] |= (1 << (P20M_MOD1_G % BUFF_COUNT));
-          //if(CurByte & 0x04) PF->P[BUFF_COUNT - (P20M_MOD1_B / BUFF_COUNT)] |= (1 << (P20M_MOD1_B % BUFF_COUNT));
           if(CurByte & 0x01) PF->P[Buff] |= BuffBits[Buff][Bit + 0];
           if(CurByte & 0x02) PF->P[Buff] |= BuffBits[Buff][Bit + 1];
           if(CurByte & 0x04) PF->P[Buff] |= BuffBits[Buff][Bit + 2];
           
           rowOffset += rowDelta;
         }
-//        //Row 2
-//        CurByte = unpacked[1 * cHO + PY * P20M_WIDTH + PX];
-//        if(CurByte & 0x01) PF->P[1] |= (1 << P20M_ROW2_R);
-//        if(CurByte & 0x02) PF->P[1] |= (1 << P20M_ROW2_G);
-//        if(CurByte & 0x04) PF->P[1] |= (1 << P20M_ROW2_B);
-//      
-//        //Row 3
-//        CurByte = unpacked[2 * cHO + PY * P20M_WIDTH + PX];
-//        if(CurByte & 0x01) PF->P[0] |= (1 << P20M_ROW3_R);
-//        if(CurByte & 0x02) PF->P[0] |= (1 << P20M_ROW3_G);
-//        if(CurByte & 0x04) PF->P[0] |= (1 << P20M_ROW3_B);
-//      
-//        //Row 4
-//        CurByte = unpacked[3 * cHO + PY * P20M_WIDTH + PX];
-//        if(CurByte & 0x01) PF->P[0] |= (1 << P20M_ROW4_R);
-//        if(CurByte & 0x02) PF->P[0] |= (1 << P20M_ROW4_G);
-//        if(CurByte & 0x04) PF->P[0] |= (1 << P20M_ROW4_B);
       }
     }
     
     colOffset += colDelta;
   }
 }
+
+/*----------------------------------------------------------------------------*/

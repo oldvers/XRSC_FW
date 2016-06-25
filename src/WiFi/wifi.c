@@ -35,15 +35,18 @@ typedef enum WiFiRx_e
   E_WIFI_RX_TIMEOUT,
   E_WIFI_RX_READY,
   E_WIFI_RX_SOCKET_OPENED,
-  //E_WIFI_RX_TCP_SEND_OK,
   E_WIFI_RX_SOCKET_CLOSED,
   E_WIFI_RX_READY_FOR_RAW,
 } WiFiRx_t;
 
+
+/* CMSIS RTOS */
 //static void WiFiRxThread(void const *argument);
-static __task void WiFiRxThread(void);
 //static void WiFiThread(void const *argument);
+/* Keil RTX */
+static __task void WiFiRxThread(void);
 static __task void WiFiStatusThread(void);
+
 
 typedef union WiFiMessage_s
 {
@@ -56,25 +59,31 @@ typedef union WiFiMessage_s
   U32 Raw;
 } WiFiMessage_t, * WiFiMessage_p;
 
+/* CMSIS RTOS */
 //osThreadId  WiFiRxThreadId;
 //osThreadDef(WiFiRxThread, WiFiRxThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-static OS_TID WiFiRxThreadId;
 //osThreadId  WiFiThreadId;
 //osThreadDef(WiFiThread, WiFiThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+
+/* Keil RTX */
+static OS_TID WiFiRxThreadId;
 static OS_TID WiFiThreadId;
 
+/* CMSIS RTOS */
 //osMessageQId   WiFiRxSyncQueueId;
 //osMessageQId   WiFiRxRawQueueId;
 //osSemaphoreId  WiFiRxSemaphoreId;
 //osMutexId      WiFiMutexId;
-
 //osMessageQDef(WiFiRxSyncQueue, 1, U32);
-os_mbx_declare(WiFiRxSyncQueue, 1);
 //osMessageQDef(WiFiRxRawQueue, 16, U32);
-os_mbx_declare(WiFiRxRawQueue, 16);
 //osSemaphoreDef(WiFiRxSemaphore);
 //osMutexDef(WiFiMutex);
+
+/* Keil RTX */
+os_mbx_declare(WiFiRxSyncQueue, 1);
+os_mbx_declare(WiFiRxRawQueue, 16);
 static OS_MUT WiFiMutex;
+
 
 #define WIFI_DEFAULT_TIMEOUT  15000
 #define WIFI_RESET_TIMEOUT    15000
@@ -99,13 +108,6 @@ typedef struct WiFi_s
 
 static WiFi_t WiFi = { {0}, {0}, WIFI_DEFAULT_TIMEOUT, 0, {0, 0}, E_SOCKET_NONE, {0}, {0} };
 
-//static U64 WiFiRxStack[512/8];
-//static U64 WiFiStatusStack[128/8];
-
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
 static struct RawFifo_s
@@ -133,19 +135,6 @@ U8 RawFifo_Put( U8 aByte )
 
 /*----------------------------------------------------------------------------*/
 
-//U16 RawFifo_Get( U8 * pBuffer )
-//{
-//  U16 Length = 0;
-//
-//  while(RawFifo.I != RawFifo.O) //Queue not Empty
-//  {
-//    *pBuffer++ = RawFifo.B[RawFifo.O];
-//    RawFifo.O = (RawFifo.O + 1) % RawFifo.C;
-//    Length++;
-//  }
-//  return Length;
-//}
-
 U8 RawFifo_Get( U8 * pByte )
 {
   if(RawFifo.I == RawFifo.O)
@@ -160,10 +149,6 @@ U8 RawFifo_Get( U8 * pByte )
 }
 
 /*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
 
 typedef struct Line_s
 {
@@ -177,10 +162,6 @@ struct Lines_s
   LT  Item[16];
 } Lines = { 0, {0} };
 
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
 __weak void H_WiFi_RxReadyCallback( U8 * pAnswer, U16 aSize )
@@ -201,33 +182,35 @@ void H_drvWiFi_Init( void )
   /* ESP8266 RESET = PC0 - GPIO, Push-Pull */
   GPIO_Init( ESP8266_RESET_PORT, ESP8266_RESET_PIN, GPIO_TYPE_OUT_PP_2MHZ );
 
+  /* CMSIS RTOS */
   //WiFiRxSyncQueueId = osMessageCreate(osMessageQ(WiFiRxSyncQueue), NULL);
   //SYSTEM_SW_ERROR_CHECK(NULL != WiFiRxSyncQueueId);
+  /* Keil RTX */
   os_mbx_init(&WiFiRxSyncQueue, sizeof(WiFiRxSyncQueue));
   
-  //WiFiRxLineQueueId = osMessageCreate(osMessageQ(WiFiRxLineQueue), NULL);
-  //SYSTEM_SW_ERROR_CHECK(NULL != WiFiRxLineQueueId);
-  
+  /* CMSIS RTOS */
   //WiFiRxRawQueueId = osMessageCreate(osMessageQ(WiFiRxRawQueue), NULL);
   //SYSTEM_SW_ERROR_CHECK(NULL != WiFiRxRawQueueId);
+  /* Keil RTX */
   os_mbx_init(&WiFiRxRawQueue, sizeof(WiFiRxRawQueue));
   
-  //WiFiRxSemaphoreId = osSemaphoreCreate(osSemaphore(WiFiRxSemaphore), 1);
-  
+  /* CMSIS RTOS */
   //WiFiMutexId = osMutexCreate(osMutex(WiFiMutex));
   //SYSTEM_SW_ERROR_CHECK(NULL != WiFiMutexId);
+  /* Keil RTX */
   os_mut_init(&WiFiMutex);
   
+  /* CMSIS RTOS */
   //WiFiRxThreadId = osThreadCreate(osThread(WiFiRxThread), NULL); 
   //SYSTEM_SW_ERROR_CHECK(NULL != WiFiRxThreadId);
-  //os_tsk_create_user(tsk,prio,stk,size)
+  /* Keil RTX */
   WiFiRxThreadId = os_tsk_create(WiFiRxThread, 10);
-  //WiFiRxThreadId = os_tsk_create_user(WiFiRxThread, 10, &WiFiRxStack, sizeof(WiFiRxStack));
   
+  /* CMSIS RTOS */
   //WiFiThreadId = osThreadCreate(osThread(WiFiThread), NULL); 
   //SYSTEM_SW_ERROR_CHECK(NULL != WiFiThreadId);
+  /* Keil RTX */
   WiFiThreadId = os_tsk_create(WiFiStatusThread, 10);
-  //WiFiThreadId = os_tsk_create_user(WiFiStatusThread, 10, &WiFiStatusStack, sizeof(WiFiStatusStack));
 }
 
 /*----------------------------------------------------------------------------*/
@@ -235,7 +218,9 @@ void H_drvWiFi_Init( void )
 //Notification : Data was received via UART
 void ESP8266_UART_RxReadyCallback( void )
 {
+  /* CMSIS RTOS */
   //osSignalSet( WiFiRxThreadId, SIGNAL_DATA_RECEIVED );
+  /* Keil RTX */
   isr_evt_set(SIGNAL_DATA_RECEIVED, WiFiRxThreadId);
 }
 
@@ -244,7 +229,9 @@ void ESP8266_UART_RxReadyCallback( void )
 //Notification : Command/Line processing completed
 void h_drvWiFi_NotifyProcessingCompleted( void )
 {
+  /* CMSIS RTOS */
   //osSignalSet( WiFiRxThreadId, SIGNAL_PROCESSING_COMPLETED );
+  /* Keil RTX */
   os_evt_set(SIGNAL_PROCESSING_COMPLETED, WiFiRxThreadId);
 }
 
@@ -252,7 +239,9 @@ void h_drvWiFi_NotifyProcessingCompleted( void )
 
 U8 WiFiLock( U32 aTimeOut )
 {
+  /* CMSIS RTOS */
   //return (U8)( osOK == osMutexWait(WiFiMutexId, aTimeOut) );
+  /* Keil RTX */
   return (U8)( OS_R_TMO != os_mut_wait(&WiFiMutex, aTimeOut) );
 }
 
@@ -260,7 +249,9 @@ U8 WiFiLock( U32 aTimeOut )
 
 void WiFiUnlock( void )
 {
+  /* CMSIS RTOS */
   //osMutexRelease(WiFiMutexId);
+  /* Kei RTX */
   os_mut_release(&WiFiMutex);
 }
 
@@ -269,19 +260,22 @@ void WiFiUnlock( void )
 void WiFiIndicateRxTxtReady( U8 aType, U16 aLength )
 {
   WiFiMessage_t Msg;
-  //static U8 RxBufferIndex = 0;
   
   Msg.Cmd.Type = aType;
   Msg.Cmd.ID = 0;
   Msg.Cmd.Length = aLength;
   
-  //Put message to the Queue
+  /* Put message to the Queue */
+  /* CMSIS RTOS */
   //osMessagePut(WiFiRxSyncQueueId, Msg.Raw, osWaitForever);
+  /* Keil RTX */
   os_mbx_send(&WiFiRxSyncQueue, (void *)Msg.Raw, 0xFFFF);
 
   
-  //Wait till message processing completed
+  /* Wait till message processing completed */
+  /* CMSIS RTOS */
   //osSignalWait(SIGNAL_PROCESSING_COMPLETED, osWaitForever);
+  /* Keil RTX */
   os_evt_wait_or(SIGNAL_PROCESSING_COMPLETED, 0xFFFF);
 }
 
@@ -293,7 +287,10 @@ void WiFiIndicateRxRawReady( U8 aID, U16 aLength )
   
   Msg.Cmd.Type = E_WIFI_RX_RAW;
   Msg.Cmd.Length = aLength;
+  
+  /* CMSIS RTOS */
   //osMessagePut(WiFiRxRawQueueId, Msg.Raw, 0);
+  /* Keil RTX */
   os_mbx_send(&WiFiRxRawQueue, (void *)Msg.Raw, 0);
 }
 
@@ -310,9 +307,6 @@ WiFiRxData_t WiFiWaitForRx( U8 * pBuffer, U16 * pLength )
   
   while ( 1 )
   {
-    //osSignalWait(SIGNAL_DATA_RECEIVED, osWaitForever);
-    //os_evt_wait_or(SIGNAL_DATA_RECEIVED, 0xFFFF);OS_R_EVT
-  
     while ( 1 == ESP8266_UART_GetByte(&Byte) )
     {
       if( DataType == E_WIFI_RX_DATA_AT )
@@ -326,7 +320,6 @@ WiFiRxData_t WiFiWaitForRx( U8 * pBuffer, U16 * pLength )
           case ',':
             pBuffer[Index++] = Byte;
             IpdLength++;
-            //RawLength = 0;
             break;
 
           case ':':
@@ -336,14 +329,12 @@ WiFiRxData_t WiFiWaitForRx( U8 * pBuffer, U16 * pLength )
               Index = RawLength;
               DataType = E_WIFI_RX_DATA_RAW;
             }
-            //*************
             if( (IpdLength == 7) && (RawLength <= 2048) )
             {
               Index = RawLength;
               DataType = E_WIFI_RX_DATA_RAW;
             }
             IpdLength = 0;
-            //*************
             break;
           case '>':
             pBuffer[Index++] = Byte;
@@ -359,15 +350,7 @@ WiFiRxData_t WiFiWaitForRx( U8 * pBuffer, U16 * pLength )
             break;
           default:
             pBuffer[Index++] = Byte;
-//            if( IpdLength != 5 )
-//            {
-//              IpdLength = 0;
-//            }
-//            else
-//            {
-//              RawLength = (Byte - 0x30) + RawLength * 10;
-//            }
-            
+
             switch ( IpdLength )
             {
               case 5: // "+IPD,XXXX:"
@@ -376,7 +359,7 @@ WiFiRxData_t WiFiWaitForRx( U8 * pBuffer, U16 * pLength )
               case 6: // "+IPD,X,"
                 ID = RawLength;
                 if ( ID > 4 ) ID = 0;
-                RawLength = (Byte - 0x30); // + RawLength * 10;
+                RawLength = (Byte - 0x30);
                 IpdLength++;
                 break;
               case 7: // "+IPD,X,XXXX:"
@@ -387,7 +370,6 @@ WiFiRxData_t WiFiWaitForRx( U8 * pBuffer, U16 * pLength )
                 RawLength = 0;
                 break;
             }
-            
             break;
         }
       }
@@ -400,12 +382,15 @@ WiFiRxData_t WiFiWaitForRx( U8 * pBuffer, U16 * pLength )
         {
           WiFiIndicateRxRawReady(ID, RawLength);
           DataType = E_WIFI_RX_DATA_AT;
-          //IpdLength = 0;
+
           return E_WIFI_RX_DATA_RAW;
         }
       }
     }
     
+    /* CMSIS RTOS */
+    //osSignalWait(SIGNAL_DATA_RECEIVED, osWaitForever);
+    /* Keil RTX */
     os_evt_wait_or( SIGNAL_DATA_RECEIVED, 0xFFFF );
   }
 }
@@ -414,8 +399,9 @@ WiFiRxData_t WiFiWaitForRx( U8 * pBuffer, U16 * pLength )
 
 __weak void WiFi_ConnectedCallback(void)
 {
-  //return;
+  /* CMSIS RTOS */
   //osSignalSet( WiFiThreadId, WIFI_EV_CONNECTED );
+  /* Keil RTX */
   os_evt_set( WIFI_EV_CONNECTED, WiFiThreadId );
 }
 
@@ -423,8 +409,9 @@ __weak void WiFi_ConnectedCallback(void)
 
 __weak void WiFi_GotIPCallback(void)
 {
-  //return;
+  /* CMSIS RTOS */
   //osSignalSet( WiFiThreadId, WIFI_EV_GOT_IP );
+  /* Keil RTX */
   os_evt_set( WIFI_EV_GOT_IP, WiFiThreadId );
 }
 
@@ -432,8 +419,9 @@ __weak void WiFi_GotIPCallback(void)
 
 __weak void WiFi_DisConnectedCallback(void)
 {
-  //return;
+  /* CMSIS RTOS */
   //osSignalSet( WiFiThreadId, WIFI_EV_DISCONNECTED );
+  /* Keil RTX */
   os_evt_set( WIFI_EV_DISCONNECTED, WiFiThreadId );
 }
 
@@ -441,13 +429,14 @@ __weak void WiFi_DisConnectedCallback(void)
 
 __weak void WiFi_DisConnect(void)
 {
+  /* CMSIS RTOS */
   //osSignalSet( WiFiThreadId, WIFI_EV_DISCONNECT );
+  /* Keil RTX */
   os_evt_set( WIFI_EV_DISCONNECT, WiFiThreadId );
 }
 
 /*----------------------------------------------------------------------------*/
 
-//void WiFiParseAt( U8 * pBuffer, U16 aLength )
 U8 * WiFiParseAt( U8 * pBuffer, U16 aLength )
 {
   if ( (aLength == 2) && (strncmp((char *)pBuffer, "OK", aLength) == 0) )
@@ -466,25 +455,22 @@ U8 * WiFiParseAt( U8 * pBuffer, U16 aLength )
   
   if ( (aLength == 14) && (strncmp((char *)pBuffer, "WIFI CONNECTED", aLength) == 0) )
   {
-    //WiFiIndicateRxTxtReady(E_WIFI_RX_CONNECTED, 0);
     WiFi_ConnectedCallback();
     return pBuffer;
   }
   
   if ( (aLength == 11) && (strncmp((char *)pBuffer, "WIFI GOT IP", aLength) == 0) )
   {
-    //WiFiIndicateRxTxtReady(E_WIFI_RX_GOT_IP, 0);
     WiFi_GotIPCallback();
     return pBuffer;
   }
   
-  
-  
   //TODO:CONNECT,DISCONNECT,SEND OK
   if ( (aLength == 7) && (strncmp((char *)pBuffer, "CONNECT", aLength) == 0) )
   {
-    //WiFiIndicateRxTxtReady(E_WIFI_RX_SOCKET_CONNECTED, 0);
+    /* CMSIS RTOS */
     //osSignalSet( WiFiThreadId, WIFI_EV_SOCKET_CONNECTED );
+    /* CMSIS RTOS */
     os_evt_set( WIFI_EV_SOCKET_OPENED_C, WiFiThreadId );
     return pBuffer;
   }
@@ -513,25 +499,24 @@ U8 * WiFiParseAt( U8 * pBuffer, U16 aLength )
   
   if ( (aLength == 6) && (strncmp((char *)pBuffer, "CLOSED", aLength) == 0) )
   {
-    //WiFiIndicateRxTxtReady(E_WIFI_RX_SOCKET_CONNECTED, 0);
+    /* CMSIS RTOS */
     //osSignalSet( WiFiThreadId, WIFI_EV_SOCKET_CONNECTED );
+    /* Keil RTX */
     os_evt_set( WIFI_EV_SOCKET_CLOSED, WiFiThreadId );
     return pBuffer;
   }
   
   if ( (aLength == 8) && (strncmp((char *)(pBuffer + 2), "CLOSED", aLength) == 0) )
   {
-    //WiFiIndicateRxTxtReady(E_WIFI_RX_SOCKET_CONNECTED, 0);
+    /* CMSIS RTOS */
     //osSignalSet( WiFiThreadId, WIFI_EV_SOCKET_CONNECTED );
+    /* Keil RTX */
     os_evt_set( WIFI_EV_SOCKET_CLOSED, WiFiThreadId );
     return pBuffer;
   }
   
-  
-  
   if ( (aLength == 15) && (strncmp((char *)pBuffer, "WIFI DISCONNECT", aLength) == 0) )
   {
-    //WiFiIndicateRxTxtReady(E_WIFI_RX_DISCONNECTED, 0);
     WiFi_DisConnectedCallback();
     return pBuffer;
   }
@@ -565,14 +550,9 @@ U8 * WiFiParseAt( U8 * pBuffer, U16 aLength )
 
 /*----------------------------------------------------------------------------*/
 
-//void WiFiRawCallback( U8 * pBuffer, U16 aLength )
-//{
-//  WiFiIndicateRxReady(E_WIFI_RX_RAW, aLength);
-//}
-      
-/*----------------------------------------------------------------------------*/
-
+/* CMSIS RTOS */
 //void WiFiRxThread(void const *argument)
+/* Keil RTX */
 __task void WiFiRxThread(void)
 {
   U16  Length = 0;
@@ -604,26 +584,34 @@ __task void WiFiRxThread(void)
 
 U8 H_drvWiFi_WaitReady(U32 aTimeOut)
 {
+  /* CMSIS RTOS */
   //osEvent       Event;
+  /* Keil RTX */
   OS_RESULT     MsgRes;
   WiFiMessage_t Msg;
   U8            Result = 0;
- 
+
+  /* CMSIS RTOS */
   //Event = osMessageGet(WiFiRxSyncQueueId, aTimeOut);
+  /* Keil RTX */
   MsgRes = os_mbx_wait(&WiFiRxSyncQueue, (void *)&Msg.Raw, aTimeOut);
   
+  /* CMSIS RTOS */
   //if (Event.status == osEventMessage)
+  /* Keil RTX */
   if( OS_R_TMO != MsgRes )
   {
+    /* CMSIS RTOS */
     //Msg.Raw = Event.value.v;
     //Msg = *((WiFiMessage_p)pMsg);
-    
-    //Event = osMessageGet(WiFiRxSyncQueueId, aTimeOut);
     //if( (Event.status == osEventMessage) && (E_WIFI_RX_READY == Msg.Cmd.Type) )
+    /* Keil RTX */
     if( E_WIFI_RX_READY == Msg.Cmd.Type )
     {
       Result = 1;
+      /* CMSIS RTOS */
       //osSignalSet( WiFiRxThreadId, SIGNAL_PROCESSING_COMPLETED );
+      /* Keil RTX */
       os_evt_set( SIGNAL_PROCESSING_COMPLETED, WiFiRxThreadId );
     }
   }
@@ -635,18 +623,25 @@ U8 H_drvWiFi_WaitReady(U32 aTimeOut)
 
 WiFiRx_t H_drvWiFi_Read(U8 * pBuffer, U16 * pLength, U32 aTimeOut)
 {
+  /* CMSIS RTOS */
   //osEvent         Event;
-  OS_RESULT     MsgRes;
   //void *        pMsg;
+  /* Keil RTX */
+  OS_RESULT     MsgRes;
   WiFiMessage_t   Msg;
   WiFiRx_t        Result = E_WIFI_RX_TIMEOUT;
- 
+
+  /* CMSIS RTOS */
   //Event = osMessageGet(WiFiRxSyncQueueId, aTimeOut);
+  /* Keil RTX */
   MsgRes = os_mbx_wait(&WiFiRxSyncQueue, (void *)&Msg.Raw, aTimeOut);
   
+  /* CMSIS RTOS */
   //if (Event.status == osEventMessage)
+  /* Keil RTX */
   if( OS_R_TMO != MsgRes )
   {
+    /* CMSIS RTOS */
     //Msg.Raw = Event.value.v;
     //Msg = *((WiFiMessage_p)pMsg);
     if ( NULL != pBuffer ) pBuffer = WiFi.RxBuffer;
@@ -669,8 +664,6 @@ void H_drvWiFi_Write(U8 * pBuffer, U16 aSize)
   for ( U16 i = 0; i < aSize; i++ ) ESP8266_UART_PutByte( pBuffer[i] );
 }
 
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
 U8 H_drvWiFi_AT_Execute(U8 * pCommand)
@@ -745,20 +738,6 @@ U8 H_drvWiFi_AT_Set(U8 * pParameter, const U8 * pFormat, ...)
   
   return 0;
 }
-
-/*----------------------------------------------------------------------------*/
-
-//void H_drvWiFi_AT_Test(U8 * pParameter)
-//{
-//  U16    Length = 0;
-//  char * Buffer = (char *)WiFiTxBuffer;
-//  
-//  Length += sprintf(Buffer, "AT%s=?\r\n", pParameter);
-//  
-//  if(Length > 0) H_drvWiFi_Write(WiFiTxBuffer, Length);
-//}
-
-//LineBuffer_Put(pBuffer, aLength);
 
 /*----------------------------------------------------------------------------*/
 
@@ -901,11 +880,6 @@ U8 H_drvWiFi_AT_Wait( U8 * pAnswer, U32 aTimeOut )
 }
   
 /*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
 
 U8 H_drvWiFi_Start(U32 aTimeOut)
 {
@@ -933,7 +907,6 @@ U8 H_drvWiFi_Start(U32 aTimeOut)
     if ( 0 == H_drvWiFi_AT_Execute((U8 *)"+RST") ) continue;
     
     //Wait till module ready for work
-    //if ( 0 == H_drvWiFi_AT_Wait("ready", osWaitForever) ) continue;
     if ( 0 == H_drvWiFi_AT_Wait((U8 *)"ready", WIFI_RESET_TIMEOUT) ) continue;
     
     //Switch off the echo
@@ -1047,21 +1020,6 @@ U8 H_drvWiFi_Connect(WiFiMode_t aMode, U8 * pSSID, U8 * pPass)
       WiFi.TimeOut = WIFI_CONNECT_TIMEOUT;
       if ( 0 == H_drvWiFi_AT_Set((U8 *)"+CWJAP_CUR", (U8 *)"\"%s\",\"%s\"", pSSID, pPass) ) break;
       
-//      if ( 0 == H_drvWiFi_AT_Get("+CWJAP_CUR", "%s,%s,%d,%d", pSSID, pPass) ) break;
-      
-//      do
-//      {
-//        Result = H_drvWiFi_Read(NULL, NULL, WiFi.TimeOut * 10);
-//  
-//        if ( E_WIFI_RX_TIMEOUT == Result ) break;
-//
-//        if ( E_WIFI_RX_GOT_IP == Result )
-//        {
-//          WiFi.Connected = 1;
-//        }
-//      }
-//      while ( WiFi.Connected == 0 );
-      
       Ret = 1;
       
       break;
@@ -1072,8 +1030,6 @@ U8 H_drvWiFi_Connect(WiFiMode_t aMode, U8 * pSSID, U8 * pPass)
     }
     case E_WIFI_MODE_WPS: //--------------------------------------------------
     {
-      //AT+CWMODE_CUR
-      //AT+WPS
       //Check WiFi Mode
       if( 1 != H_drvWiFi_AT_Get((U8 *)"+CWMODE_CUR", (U8 *)":%d", &Mode) ) break;
     
@@ -1132,25 +1088,28 @@ U8 H_drv_WiFi_IsReady(void)
 }
 
 /*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
 
 U8 WiFi_WaitForEvent( U32 aTimeOut )
 {
+  /* CMSIS RTOS */
   //osEvent evt;
+  /* Keil RTX */
   OS_RESULT EvtRes;
   U16 res = 0;
   
+  /* CMSIS RTOS */
   //evt = osSignalWait(0xFF, aTimeOut);
+  /* Keil RTX */
   EvtRes = os_evt_wait_or(0xFF, aTimeOut);
   
+  /* CMSIS RTOS */
   //if ( evt.status == osEventSignal)
+  /* Keil RTX */
   if ( OS_R_EVT == EvtRes )
   {
+    /* CMSIS RTOS */
     //res = evt.value.signals;
+    /* Keil RTX */
     res = os_evt_get( );
   }
   
@@ -1161,7 +1120,9 @@ U8 WiFi_WaitForEvent( U32 aTimeOut )
 
 void WiFi_Connect(void)
 {
+  /* CMSIS RTOS */
   //osSignalSet( WiFiThreadId, WIFI_EV_CONNECT );
+  /* Keil RTX */
   os_evt_set( WIFI_EV_CONNECT, WiFiThreadId );
 }
 
@@ -1242,14 +1203,16 @@ U8 WiFi_CheckStatus(void)
 
 /*----------------------------------------------------------------------------*/
 
+/* CMSIS RTOS */
 //void WiFiThread(void const *argument)
+/* Keil RTX */
 __task void WiFiStatusThread(void)
 {
   U8 Events;
   
-  //H_drvWiFi_Init();
-  
+  /* CMSIS RTOS */
   //H_drvWiFi_WaitReady( osWaitForever );
+  /* Keil RTX */
   H_drvWiFi_WaitReady( 0xFFFF );
   
   while ( 1 )
@@ -1276,7 +1239,9 @@ __task void WiFiStatusThread(void)
 
 U8 SocketOpen(Socket_t aSocket, SocketType_t aType, U8 * pLink, U16 aPort)
 {
+  /* CMSIS RTOS */
   //WiFiRx_t Result;
+  /* Keil RTX */
   char sType[5];
   U8 Ret = 0;
   
@@ -1342,7 +1307,6 @@ U8 SocketOpen(Socket_t aSocket, SocketType_t aType, U8 * pLink, U16 aPort)
 U8 SocketWrite(U8 aSocket, U8 * pData, U16 aSize)
 {
   U8 Ret = 0;
-  //U16 tLength, rLength;
   U16 rLength;
   WiFiRx_t Result;
   U8 Repeats = 3;
@@ -1354,15 +1318,11 @@ U8 SocketWrite(U8 aSocket, U8 * pData, U16 aSize)
   
   if ( 0 == WiFiLock( WiFi.TimeOut ) ) return 0;
 
-  //Prepare the Send Command
-  //tLength = sprintf((char *)WiFi.TxBuffer, "AT+CIPSEND=%d\r\n", aSize);
-
-  if ( 0 == aSize ) return 0; //|| ( 0 == tLength ) ) return 0;
+  if ( 0 == aSize ) return 0;
   
   while ( 0 < Repeats-- )
   {
     //Write the Send Command with Raw Data Size
-    //H_drvWiFi_Write(WiFi.TxBuffer, tLength);
     if ( E_SOCKET_CLIENT == WiFi.Socket )
     {
       if( 1 != H_drvWiFi_AT_Set((U8 *)"+CIPSEND", (U8 *)"%d", aSize) ) continue;
@@ -1409,9 +1369,11 @@ U8 SocketWrite(U8 aSocket, U8 * pData, U16 aSize)
   
 U8 SocketRead(U8 * pSocket, U8 * pData, U16 * pSize)
 {
+  /* CMSIS RTOS */
   //osEvent         Event;
-  OS_RESULT       MsgRes;
   //void *          pMsg;
+  /* Keil RTX */
+  OS_RESULT       MsgRes;
   WiFiMessage_t   Msg;
   U8              Result = 0;
 
@@ -1424,12 +1386,17 @@ U8 SocketRead(U8 * pSocket, U8 * pData, U16 * pSize)
   
   //if ( 0 == WiFiLock( WiFi.TimeOut ) ) return 0;
   
+  /* CMSIS RTOS */
   //Event = osMessageGet(WiFiRxRawQueueId, WiFi.TimeOut);
+  /* Keil RTX */
   MsgRes = os_mbx_wait(&WiFiRxRawQueue, (void *)&Msg.Raw, WiFi.TimeOut);
   
+  /* CMSIS RTOS */
   //if (Event.status == osEventMessage)
+  /* Keil RTX */
   if( OS_R_TMO != MsgRes )
   {
+    /* CMSIS RTOS */
     //Msg.Raw = Event.value.v;
     //Msg = *((WiFiMessage_p)pMsg);
     

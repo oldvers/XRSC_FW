@@ -3,6 +3,8 @@
 //Buffer for Unpacked Picture
 unsigned char unpacked[MAX_PICTURE_SIZE];
 
+/*----------------------------------------------------------------------------*/
+
 unsigned char * unpack_full(unsigned char const * apackedbuf, unsigned short const apackedsize)
 {
   unsigned char CurByte;
@@ -44,8 +46,7 @@ unsigned char * unpack_full(unsigned char const * apackedbuf, unsigned short con
   return (unsigned char *)&unpacked;
 }
 
-
-
+/*----------------------------------------------------------------------------*/
 
 unsigned char * unpack_mono(unsigned char const * apackedbuf, unsigned short const apackedsize)
 {
@@ -76,3 +77,5 @@ unsigned char * unpack_mono(unsigned char const * apackedbuf, unsigned short con
   
   return (unsigned char *)&unpacked;
 }
+
+/*----------------------------------------------------------------------------*/
